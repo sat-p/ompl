@@ -29,3 +29,10 @@ package.xml
 .dir-locals.el
 *~
 install-ompl-ubuntu.sh
+Makefile
+*.cmake
+CMakeFiles/
+*.log
+CMakeCache.txt
+castxml.cfg
+install_manifest.txt

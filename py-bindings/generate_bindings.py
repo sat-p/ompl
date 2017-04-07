@@ -543,7 +543,7 @@ class ompl_geometric_generator_t(code_generator_t):
         # solution.
 
         # do this for all planners
-        for planner in ['EST', 'BiEST', 'ProjEST', 'KPIECE1', 'BKPIECE1', 'LBKPIECE1', 'PRM', 'LazyPRM', 'LazyPRMstar', 'PDST', 'LazyRRT', 'RRT', 'RRTConnect', 'TRRT', 'RRTstar', 'RRTXstatic', 'RRTsharp','LBTRRT', 'SBL', 'SPARS', 'SPARStwo', 'STRIDE', 'FMT', 'BFMT', 'InformedRRTstar', 'SORRTstar', 'BITstar', 'SST']:
+        for planner in ['EST', 'BiEST', 'ProjEST', 'KPIECE1', 'BKPIECE1', 'LBKPIECE1', 'PRM', 'LazyPRM', 'LazyPRMstar', 'PDST', 'LazyRRT', 'RRT', 'RRTConnect', 'TRRT', 'RRTstar', 'RRTXstatic', 'RRTsharp','LBTRRT', 'SBL', 'SPARS', 'SPARStwo', 'STRIDE', 'FMT', 'BFMT', 'InformedRRTstar', 'SORRTstar', 'BITstar', 'SST', 'FMTclone']:
             try:
                 cls = self.ompl_ns.class_(planner)
             except:
@@ -574,7 +574,6 @@ class ompl_geometric_generator_t(code_generator_t):
                     return default_solve( boost::ref(ptc) );
                 }
             }
-
             ::ompl::base::PlannerStatus default_solve( ::ompl::base::PlannerTerminationCondition const & ptc );
             """)
         PRM_cls.add_declaration_code(open(join(dirname(__file__),
@@ -583,7 +582,6 @@ class ompl_geometric_generator_t(code_generator_t):
         PRM_cls.add_registration_code("""def("solve",
             (::ompl::base::PlannerStatus(::ompl::geometric::PRM::*)( ::ompl::base::PlannerTerminationCondition const &))(&PRM_wrapper::solve),
             (::ompl::base::PlannerStatus(PRM_wrapper::*)( ::ompl::base::PlannerTerminationCondition const & ))(&PRM_wrapper::default_solve), bp::arg("ptc") );
-
             // HACK ALERT: closing brace destroys bp::scope, so that PRMstar is not a nested class of PRM
             }
             {
