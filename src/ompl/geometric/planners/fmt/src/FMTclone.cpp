@@ -27,6 +27,10 @@ static constexpr double maxDouble = std::numeric_limits<double>::max();
 FMTClass::FMTclone (const base::SpaceInformationPtr &si) :
     ompl::base::Planner (si, "PMR EE698G")
 {
+    numSamples_ = 10000;
+    
+    OMPL_DEBUG ("%s : Constructor of FMTclone called", getName().c_str());
+    std::cerr << "Constructor of FMTclone called" << std::endl;
     /*
      * Declaring parameters.
      */
@@ -34,18 +38,25 @@ FMTClass::FMTclone (const base::SpaceInformationPtr &si) :
     
     Planner::declareParam<unsigned> ("numSamples", this,
                                      &FMTclone::setNumSamples,
-                                     &FMTclone::getNumSamples);
+                                     &FMTclone::getNumSamples,
+                                     "1:10:1000000");
     
     Planner::declareParam<double> ("distMultiplier", this,
                                    &FMTclone::setDistMultiplier,
-                                   &FMTclone::getDistMultiplier);
+                                   &FMTclone::getDistMultiplier,
+                                   "0.1:0.01:10.");
+    
+    std::cerr << "Exiting Constructor of FMTclone" << std::endl;
 }
 
 /************************************************************************/
 
 FMTClass::~FMTclone (void)
 {
-    free();
+    OMPL_DEBUG ("%s : Destructor of FMTclone called", getName().c_str());
+    std::cerr << "Destructor of FMTclone called" << std::endl;
+    clear();
+    std::cerr << "Exiting destructor of FMTclone" << std::endl;
 }
 
 /************************************************************************/
@@ -53,6 +64,8 @@ FMTClass::~FMTclone (void)
 
 void FMTClass::setup (void)
 {
+    OMPL_DEBUG ("%s : setup() called", getName().c_str());
+    std::cerr << "setup() called" << std::endl;
     // Setting up the sampler
     sampler_ = si_->allocStateSampler();
     
@@ -84,12 +97,15 @@ void FMTClass::setup (void)
                             { return opt_->motionCost(x1, x2).value(); });
     
     setup_ = true;
+    std::cerr << "Exiting setup(" << std::endl;
 }
 
 /************************************************************************/
 
 void FMTClass::clear (void)
 {
+    OMPL_DEBUG ("%s : clear() called", getName().c_str());
+    std::cerr << "clear() called" << std::endl;
     const unsigned reserveSize = numSamples_ + 5;
         
     goal_ = nullptr;
@@ -106,6 +122,7 @@ void FMTClass::clear (void)
     free();
     
     V_.clear();
+    std::cerr << "Exiting clear()" << std::endl;
 }
 
 /************************************************************************/
@@ -113,11 +130,14 @@ void FMTClass::clear (void)
 
 void FMTClass::free (void)
 {
+    OMPL_DEBUG ("%s : free() called", getName().c_str());
+    std::cerr << "free() called" << std::endl;
     stateVector nodes;
     V_.list (nodes); // Fetching all nodes;
     
     for (auto* it : nodes)
         si_->freeState (const_cast<ompl::base::State*> (it));   
+    std::cerr << "Exiting free()" << std::endl;
 }
 
 /************************************************************************/
@@ -126,6 +146,8 @@ void FMTClass::free (void)
 ompl::base::PlannerStatus
 FMTClass::solve (const base::PlannerTerminationCondition &tc)
 {
+    OMPL_DEBUG ("%s : solve() called", getName().c_str());
+    std::cerr << "solve() called" << std::endl;
     // Checking if current state is valid.
     // Calls parent class's member function checkValidity();
     // Throws exception if the planner is in an invalid state.
@@ -169,6 +191,8 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
     
     r_n_ = neighborDistance();
     
+    OMPL_INFORM ("%s : The value of r_n_ is %lf", getName().c_str(), r_n_);
+    
     // Choosing one of the start states.
     double cost;
     const ompl::base::State* z = nullptr;
@@ -185,12 +209,14 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
      */
     while (!tc) {
         
+        std::cerr << "This size of V_open_ is " << V_open_.size() << std::endl;
+        
         if (goal->isSatisfied (z)) {
             OMPL_INFORM ("%s: Found solution", getName().c_str());
             goal_ = z;
             
             addSolutionPath();
-            
+            std::cerr << "Exiting solve()" << std::endl;
             typedef ompl::base::PlannerStatus PS;
             return PS (PS::StatusType::EXACT_SOLUTION);
         }
@@ -245,11 +271,9 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
     }
     
     typedef ompl::base::PlannerStatus PS;
+    std::cerr << "Exiting solve()" << std::endl;
     
-    if (tc)
-        return PS (PS::StatusType::TIMEOUT);
-    else
-        return PS (PS::StatusType::ABORT);
+    return PS (PS::StatusType::TIMEOUT);
 }
 
 /************************************************************************/
@@ -257,24 +281,41 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
 
 void FMTClass::getPlannerData (ompl::base::PlannerData &data) const
 {
+    std::cerr << "Called getPlannerData()" << std::endl;
+    OMPL_DEBUG ("%s : getPlannerData() called", getName().c_str());
+    
+    typedef ompl::base::PlannerDataVertex data_t;
+    
     Planner::getPlannerData (data);
     
-    if (goal_)
-        data.addGoalVertex (goal_);
+//     if (goal_)
+//         data.addGoalVertex (data_t (goal_));
     
     for (const auto& aux : auxData_) {
-    
-        if (aux.second.parent)
-            data.addEdge (aux.second.parent, aux.first);
-        else
-            data.addStartVertex (aux.first);
+        
+        data.addVertex (aux.first);
+        
+        if (aux.second.setType == FMT_SetType::UNVISITED)
+            continue;
+        
+        std::cerr << "adding vertex" << std::endl;
+
+        
+//         if (aux.second.parent)
+//             data.addEdge (data_t (aux.second.parent), data_t (aux.first));
+//         else
+//             data.addStartVertex (data_t (aux.first));
     }
+    std::cerr << "Exiting getPlannerData()" << std::endl;
 }
 
 /************************************************************************/
 
 void FMTClass::addSolutionPath (void)
 {
+    std::cerr << "Called addSolutionPath()" << std::endl;
+    OMPL_DEBUG ("%s : addSolutionPath() called", getName().c_str());
+    
     if (goal_ == nullptr)
         return;
     
@@ -297,6 +338,7 @@ void FMTClass::addSolutionPath (void)
     }
     
     pdef_->addSolutionPath (path);
+    std::cerr << "Exiting addSolutionPath()" << std::endl;
 }
 
 /************************************************************************/
@@ -304,6 +346,8 @@ void FMTClass::addSolutionPath (void)
 
 void FMTClass::sampleStart (void)
 {
+    OMPL_DEBUG ("%s : sampleStart() called", getName().c_str());
+    
     while (const ompl::base::State* start = pis_.nextStart()) {
         
         ompl::base::State* node = si_->allocState();
@@ -322,6 +366,8 @@ void FMTClass::sampleStart (void)
 void
 FMTClass::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 {
+    OMPL_DEBUG ("%s : sampleFree() called", getName().c_str());
+    
     unsigned attempts = 0;
     unsigned numSampled = 0;
     
@@ -356,6 +402,8 @@ FMTClass::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 
 void FMTClass::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 {
+    OMPL_DEBUG ("%s : sampleGoal() called", getName().c_str());
+    
     const auto threshold = goal->getThreshold();
     
     // Ensuring that there a valid state near each goal.
@@ -381,6 +429,8 @@ void FMTClass::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 
 void FMTClass::saveNear (const ompl::base::State* z)
 {
+    OMPL_DEBUG ("%s : saveNear() called", getName().c_str());
+    
     auto& zData = auxData_.at (z);
     
     if (zData.nnSearched)
@@ -397,6 +447,8 @@ void FMTClass::saveNear (const ompl::base::State* z)
 
 double FMTClass::unitBallVolume (const unsigned dim) const
 {
+    OMPL_DEBUG ("%s : unitBallVolume() called", getName().c_str());
+    
     if (!dim)
         return 1.0;
     else if (dim == 1)
@@ -410,6 +462,8 @@ double FMTClass::unitBallVolume (const unsigned dim) const
 double FMTClass::freeVolume
 (const unsigned attempts, const unsigned samples) const
 {
+    OMPL_DEBUG ("%s : freeVolume() called", getName().c_str());
+    
     return  (si_->getSpaceMeasure() / attempts) * samples;
 }
 
@@ -417,6 +471,8 @@ double FMTClass::freeVolume
 
 double FMTClass::neighborDistance (void) const
 {
+    OMPL_DEBUG ("%s : neighborDistance() called", getName().c_str());
+    
     const double d = si_->getStateDimension();
     const double d_inv = 1 / d;
     

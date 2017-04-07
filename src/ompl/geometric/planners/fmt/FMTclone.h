@@ -1,3 +1,4 @@
+
 /************************************************************************/
 
 #ifndef __FMT_OMPL_EE698G__
@@ -43,10 +44,11 @@ struct FMT_AuxData
 {
 public:
     FMT_AuxData (FMT_SetType _setType,
-                 const double _cost = std::numeric_limits<double>::max()) :
+                 const double _cost = std::numeric_limits<double>::max()):
         setType     (_setType),
         cost        (_cost),
-        nnSearched  (false)
+        nnSearched  (false),
+        parent      (nullptr)
     {}
     
 public:
