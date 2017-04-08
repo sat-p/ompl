@@ -147,7 +147,8 @@ protected:
     ompl::NearestNeighborsGNAT<const ompl::base::State*> V_;
 
 protected:
-    std::priority_queue< std::pair<double, const ompl::base::State*> >
+    typedef std::pair<double, const ompl::base::State*> pq_t;
+    std::priority_queue<pq_t, std::vector<pq_t>, std::greater<pq_t> >
     V_open_;
     
     // Hashed map of the auxillary data of a node.

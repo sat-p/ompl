@@ -209,8 +209,6 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
      */
     while (!tc) {
         
-        std::cerr << "This size of V_open_ is " << V_open_.size() << std::endl;
-        
         if (goal->isSatisfied (z)) {
             OMPL_INFORM ("%s: Found solution", getName().c_str());
             goal_ = z;
@@ -293,18 +291,15 @@ void FMTClass::getPlannerData (ompl::base::PlannerData &data) const
     
     for (const auto& aux : auxData_) {
         
-        data.addVertex (aux.first);
+        data.addVertex (data_t (aux.first));
         
         if (aux.second.setType == FMT_SetType::UNVISITED)
             continue;
         
-        std::cerr << "adding vertex" << std::endl;
-
-        
-//         if (aux.second.parent)
-//             data.addEdge (data_t (aux.second.parent), data_t (aux.first));
-//         else
-//             data.addStartVertex (data_t (aux.first));
+        if (aux.second.parent)
+            data.addEdge (data_t (aux.second.parent), data_t (aux.first));
+        else
+            data.addStartVertex (data_t (aux.first));
     }
     std::cerr << "Exiting getPlannerData()" << std::endl;
 }
@@ -429,8 +424,6 @@ void FMTClass::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 
 void FMTClass::saveNear (const ompl::base::State* z)
 {
-    OMPL_DEBUG ("%s : saveNear() called", getName().c_str());
-    
     auto& zData = auxData_.at (z);
     
     if (zData.nnSearched)
