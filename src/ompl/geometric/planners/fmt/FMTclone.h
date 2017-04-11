@@ -1,3 +1,4 @@
+
 /************************************************************************/
 
 #ifndef __FMT_OMPL_EE698G__
@@ -43,10 +44,11 @@ struct FMT_AuxData
 {
 public:
     FMT_AuxData (FMT_SetType _setType,
-                 const double _cost = std::numeric_limits<double>::max()) :
+                 const double _cost = std::numeric_limits<double>::max()):
         setType     (_setType),
         cost        (_cost),
-        nnSearched  (false)
+        nnSearched  (false),
+        parent      (nullptr)
     {}
     
 public:
@@ -119,14 +121,9 @@ protected:
 
 protected:
     void saveNear (const ompl::base::State* z);
-    
+
 protected:
-    double unitBallVolume (const unsigned dim) const;
-    
-    double freeVolume (const unsigned attempts,
-                       const unsigned samples) const;
-    
-    double neighborDistance (void) const;
+    double neighborK (void) const;
     
 protected:
     /*
@@ -145,7 +142,8 @@ protected:
     ompl::NearestNeighborsGNAT<const ompl::base::State*> V_;
 
 protected:
-    std::priority_queue< std::pair<double, const ompl::base::State*> >
+    typedef std::pair<double, const ompl::base::State*> pq_t;
+    std::priority_queue<pq_t, std::vector<pq_t>, std::greater<pq_t> >
     V_open_;
     
     // Hashed map of the auxillary data of a node.
@@ -157,7 +155,7 @@ protected:
         
 protected:
     double mu_free_; // The free space volume
-    double r_n_; // The distance threshold for neighbors
+    unsigned k_; // The value of k for nearest neighbor serarch
     
 protected:
     const ompl::base::State* goal_;
